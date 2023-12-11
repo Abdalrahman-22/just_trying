@@ -7,7 +7,3 @@ lasssssst
 bhbhbhbhbhbh
 
 trying the pull
-
-
-first pull
-second pull
