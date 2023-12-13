@@ -13,9 +13,13 @@ aboOoOd
 
 trying with REadme
 
+<<<<<<< Updated upstream
 this is after stash tinng
 ---
 -
 -
 -
 **********
+=======
+this is with stash
+>>>>>>> Stashed changes
