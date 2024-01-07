@@ -13,6 +13,7 @@ IPAddress subnet(255, 255, 255, 0);
 
 ESP8266WebServer server(80);
 
+
 int pin1 = D7;
 int pin2 = D5;
 int led1Pin = D1; // Pin for the first LED
@@ -20,6 +21,7 @@ int led2Pin = D2; // Pin for the second LED
 
 int secondsToToggle1 = -1;
 int secondsToToggle2 = -1;
+
 
 // HTML code for the web page with Bootstrap, CSS, and JavaScript
 const char *htmlPage = "<html>"
@@ -126,30 +128,34 @@ void setup() {
 }
 
 void loop() {
-  server.handleClient();
-
+    server.handleClient();
+Serial.println("789");
   bool currentState1 = digitalRead(pin1);
 
   if (currentState1 == LOW && previousState1 == HIGH || currentState1 == HIGH && previousState1 == LOW) {
-    // Falling edge detected on pin 1, do something
     delay(300);
     secondPin1();
   }
 
   previousState1 = currentState1;
 
-  // Poll the state of the second pin
   bool currentState2 = digitalRead(pin2);
 
   if (currentState2 == LOW && previousState2 == HIGH || currentState2 == HIGH && previousState2 == LOW) {
-    // Falling edge detected on pin 2, do something
     delay(300);
     secondPin2();
   }
 
   previousState2 = currentState2;
 
-  // Your other main loop code
+}
+
+void secondPin1() {
+  digitalWrite(led1Pin, !digitalRead(led1Pin));
+}
+
+void secondPin2() {
+  digitalWrite(led2Pin, !digitalRead(led2Pin));
 }
 
 void handleRoot() {
@@ -176,13 +182,4 @@ void handleLEDState() {
   Serial.println(state2);
   String info = "{\"state1\": \"" + state1 + "\", \"state2\": \"" + state2 + "\"}";
   server.send(200, "application/json", info);
-}
-
-
-void secondPin1() {
-  digitalWrite(led1Pin, !digitalRead(led1Pin));
-}
-
-void secondPin2() {
-  digitalWrite(led2Pin, !digitalRead(led2Pin));
 }
