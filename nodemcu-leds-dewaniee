@@ -7,7 +7,7 @@ const char *password = "87654321";
 
 bool previousState1 = HIGH;
 bool previousState2 = HIGH;
-IPAddress staticIP(192, 168, 8, 144);
+IPAddress staticIP(192, 168, 8, 123);
 IPAddress gateway(192, 168, 8, 1);
 IPAddress subnet(255, 255, 255, 0);
 
@@ -127,7 +127,7 @@ void setup() {
 
 void loop() {
   server.handleClient();
-
+  delay(100);
   bool currentState1 = digitalRead(pin1);
 
   if (currentState1 == LOW && previousState1 == HIGH || currentState1 == HIGH && previousState1 == LOW) {
@@ -172,8 +172,6 @@ void handleToggle() {
 void handleLEDState() {
   String state1 = digitalRead(led1Pin) ? "Off" : "On";
   String state2 = digitalRead(led2Pin) ? "Off" : "On";
-  Serial.println(state1);
-  Serial.println(state2);
   String info = "{\"state1\": \"" + state1 + "\", \"state2\": \"" + state2 + "\"}";
   server.send(200, "application/json", info);
 }
