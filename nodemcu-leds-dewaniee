@@ -1,0 +1,188 @@
+#include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h>
+#include <ArduinoJson.h>
+
+const char *ssid = "PL";
+const char *password = "87654321";
+
+bool previousState1 = HIGH;
+bool previousState2 = HIGH;
+IPAddress staticIP(192, 168, 8, 144);
+IPAddress gateway(192, 168, 8, 1);
+IPAddress subnet(255, 255, 255, 0);
+
+ESP8266WebServer server(80);
+
+int pin1 = D7;
+int pin2 = D5;
+int led1Pin = D1; // Pin for the first LED
+int led2Pin = D2; // Pin for the second LED
+
+int secondsToToggle1 = -1;
+int secondsToToggle2 = -1;
+
+// HTML code for the web page with Bootstrap, CSS, and JavaScript
+const char *htmlPage = "<html>"
+"<head>"
+"  <meta charset='UTF-8'>"
+"  <meta name='viewport' content='width=device-width, initial-scale=1'>"
+"  <link rel='stylesheet' href='https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css' integrity='sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T' crossorigin='anonymous'>"
+"  <style>"
+"    body {"
+"      display: flex;"
+"      align-items: center;"
+"      justify-content: center;"
+"      height: 100vh;"
+"      margin: 0;"
+"    }"
+"    .btn-toggle {"
+"      width: 150px;"
+"      margin-top: 10px;"
+"    }"
+"  </style>"
+"  <script>"
+"    setInterval(function () { updateLEDState(); }, 300);"
+"    function updateLEDState() {"
+"      var button1 = document.getElementById('button1');"
+"      var button2 = document.getElementById('button2');"
+"      fetch('/ledstate')"
+"        .then(response => response.json())"
+"        .then(data => {"
+"          console.log('Received data:', data);"
+""
+"          if (data.state1 == 'On') {"
+"            button1.innerHTML = 'إيقاف';"
+"            button1.classList.remove('btn-success');"
+"            button1.classList.add('btn-danger');"
+"          } else if (data.state1 == 'Off') {"
+"            button1.innerHTML = 'تشغيل';"
+"            button1.classList.remove('btn-danger');"
+"            button1.classList.add('btn-success');"
+"          }"
+"          if (data.state2 == 'On') {"
+"            button2.innerHTML = 'إيقاف';"
+"            button2.classList.remove('btn-success');"
+"            button2.classList.add('btn-danger');"
+"          } else if (data.state2 == 'Off') {"
+"            button2.innerHTML = 'تشغيل';"
+"            button2.classList.remove('btn-danger');"
+"            button2.classList.add('btn-success');"
+"          }"
+"        })"
+"        .catch(error => {"
+"          console.error('Error fetching data:', error);"
+"        });"
+"    }"
+
+"    function toggleLED(led, button) {"
+"      var xhr = new XMLHttpRequest();"
+"      xhr.open('GET', '/toggle?led=' + led, true);"
+"      xhr.send();"
+"    }"
+
+"  </script>"
+"</head>"
+"<body>"
+"  <div class='container text-center'>"
+"    <h1 class='mt-3'>الديہوانہيہة</h1>"
+"    <button id='button1' class='btn btn-primary btn-toggle' onclick='toggleLED(1, this)'>تشغيل</button>"
+"    <button id='button2' class='btn btn-primary btn-toggle' onclick='toggleLED(2, this)'>تشغيل</button>"
+"    <div id='timerlabel1' class='mt-3'></div>"
+"    <div id='timerlabel2' class='mt-3'></div>"
+"  </div>"
+"</body>"
+"</html>";
+
+void setup() {
+  Serial.begin(9600);
+  delay(100);
+
+  // Connect to Wi-Fi with static IP
+  WiFi.config(staticIP, gateway, subnet);
+  WiFi.begin(ssid, password);
+
+  Serial.println("Connected to WiFi");
+
+  // Set up GPIO pins for LEDs
+  pinMode(led1Pin, OUTPUT);
+  pinMode(led2Pin, OUTPUT);
+
+  // Define web server routes
+  server.on("/", HTTP_GET, handleRoot);
+  server.on("/toggle", HTTP_GET, handleToggle);
+  server.on("/ledstate", HTTP_GET, handleLEDState);
+
+  pinMode(pin1, INPUT_PULLUP);
+  pinMode(pin2, INPUT_PULLUP);
+
+  // Start server
+  server.begin();
+  Serial.println("HTTP server started");
+
+  digitalWrite(led1Pin, HIGH);
+  digitalWrite(led2Pin, HIGH);
+  previousState1 = digitalRead(pin1);
+  previousState2 = digitalRead(pin2);
+}
+
+void loop() {
+  server.handleClient();
+
+  bool currentState1 = digitalRead(pin1);
+
+  if (currentState1 == LOW && previousState1 == HIGH || currentState1 == HIGH && previousState1 == LOW) {
+    // Falling edge detected on pin 1, do something
+    delay(300);
+    secondPin1();
+  }
+
+  previousState1 = currentState1;
+
+  // Poll the state of the second pin
+  bool currentState2 = digitalRead(pin2);
+
+  if (currentState2 == LOW && previousState2 == HIGH || currentState2 == HIGH && previousState2 == LOW) {
+    // Falling edge detected on pin 2, do something
+    delay(300);
+    secondPin2();
+  }
+
+  previousState2 = currentState2;
+
+  // Your other main loop code
+}
+
+void handleRoot() {
+  // Serve HTML page with buttons
+  server.send(200, "text/html", htmlPage);
+}
+
+void handleToggle() {
+  // Toggle the corresponding LED based on the "led" query parameter
+  int led = server.arg("led").toInt();
+  if (led == 1) {
+    digitalWrite(led1Pin, !digitalRead(led1Pin));
+    server.send(200, "text/plain", digitalRead(led1Pin) ? "OFF" : "ON");
+  } else if (led == 2) {
+    digitalWrite(led2Pin, !digitalRead(led2Pin));
+    server.send(200, "text/plain", digitalRead(led2Pin) ? "OFF" : "ON");
+  }
+}
+
+void handleLEDState() {
+  String state1 = digitalRead(led1Pin) ? "Off" : "On";
+  String state2 = digitalRead(led2Pin) ? "Off" : "On";
+  Serial.println(state1);
+  Serial.println(state2);
+  String info = "{\"state1\": \"" + state1 + "\", \"state2\": \"" + state2 + "\"}";
+  server.send(200, "application/json", info);
+}
+
+
+void secondPin1() {
+  digitalWrite(led1Pin, !digitalRead(led1Pin));
+}
+
+void secondPin2() {
+  digitalWrite(led2Pin, !digitalRead(led2Pin));
+}
